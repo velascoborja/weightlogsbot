@@ -100,56 +100,64 @@ async def semanal_cmd(update: Update, context: CallbackContext) -> None:
 
 async def diario_cmd(update: Update, context: CallbackContext) -> None:
     """Handle the /diario command."""
+    print("[DEBUG] Entrando a diario_cmd")
     user_id = update.effective_user.id
     today = dt.datetime.now(TZ).date()
+    print(f"[DEBUG] user_id: {user_id}, today: {today}")
     
     # Get data for the last 6 days
     start_date = today - dt.timedelta(days=5)
+    print(f"[DEBUG] start_date: {start_date}")
     weights_data = get_weights(user_id, start_date, today)
+    print(f"[DEBUG] weights_data: {weights_data}")
     
     # Prepare text response
     lines = ["📆 Pesos últimos 6 días:"]
     for i in range(6):
         d = today - dt.timedelta(days=i)
         ws = get_weights(user_id, d, d)
-        weight_text = f"{ws[-1][1]:.1f} kg" if ws else "sin datos"
+        print(f"[DEBUG] Día: {d}, ws: {ws}")
+        weight_text = f"{ws[0][1]:.1f} kg" if ws else "sin datos"
         lines.append(f"{d.strftime('%d/%m')}: {weight_text}")
     
+    print(f"[DEBUG] lines: {lines}")
     # Send text first
-    await update.message.reply_text("\n".join(lines))
+    try:
+        await update.message.reply_text("\n".join(lines))
+        print("[DEBUG] Mensaje de texto enviado")
+    except Exception as e:
+        print(f"[ERROR] Error enviando mensaje de texto: {e}")
     
     # Create and send chart if we have data
     if len(weights_data) >= 2:
+        print("[DEBUG] Hay suficientes datos para el gráfico")
         dates = [d for d, _ in weights_data]
         vals = [w for _, w in weights_data]
-        
-        # Create chart
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.plot(dates, vals, marker="o", linewidth=2, markersize=6)
-        ax.set_title("Evolución peso - Últimos 6 días", fontsize=14, fontweight='bold')
-        ax.set_ylabel("Kg", fontsize=12)
-        ax.set_xlabel("Fecha", fontsize=12)
-        ax.grid(True, alpha=0.3)
-        
-        # Format x-axis dates
-        ax.tick_params(axis='x', rotation=45)
-        
-        # Add value labels on points
-        for i, (date, weight) in enumerate(zip(dates, vals)):
-            ax.annotate(f'{weight:.1f}', (date, weight), 
-                       textcoords="offset points", xytext=(0,10), 
-                       ha='center', fontsize=10)
-        
-        plt.tight_layout()
-        
-        # Save to buffer
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=150, bbox_inches='tight')
-        plt.close(fig)
-        buf.seek(0)
-        
-        # Send chart
-        await update.message.reply_photo(
-            InputFile(buf, "peso_diario.png"),
-            caption="📈 Gráfico de evolución de peso - Últimos 6 días"
-        ) 
+        try:
+            # Create chart
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot(dates, vals, marker="o", linewidth=2, markersize=6)
+            ax.set_title("Evolución peso - Últimos 6 días", fontsize=14, fontweight='bold')
+            ax.set_ylabel("Kg", fontsize=12)
+            ax.set_xlabel("Fecha", fontsize=12)
+            ax.grid(True, alpha=0.3)
+            ax.tick_params(axis='x', rotation=45)
+            for i, (date, weight) in enumerate(zip(dates, vals)):
+                ax.annotate(f'{weight:.1f}', (date, weight), 
+                           textcoords="offset points", xytext=(0,10), 
+                           ha='center', fontsize=10)
+            plt.tight_layout()
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", dpi=150, bbox_inches='tight')
+            plt.close(fig)
+            buf.seek(0)
+            print("[DEBUG] Gráfico generado correctamente")
+            await update.message.reply_photo(
+                InputFile(buf, "peso_diario.png"),
+                caption="📈 Gráfico de evolución de peso - Últimos 6 días"
+            )
+            print("[DEBUG] Foto enviada correctamente")
+        except Exception as e:
+            print(f"[ERROR] Error generando o enviando el gráfico: {e}")
+    else:
+        print("[DEBUG] No hay suficientes datos para enviar gráfico") 
