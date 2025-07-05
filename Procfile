@@ -1,0 +1,1 @@
+worker: python telegram_weight_tracker_bot.py
