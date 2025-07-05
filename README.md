@@ -31,6 +31,12 @@ weightlogs/
 ├── main.py           # Main application entry point
 ├── requirements.txt  # Python dependencies
 ├── Procfile         # Heroku deployment configuration
+├── tests/            # Test suite
+│   ├── __init__.py
+│   ├── test_bot.py      # Main bot functionality tests
+│   ├── test_database.py # Database operation tests
+│   ├── test_diario.py   # Diario command specific tests
+│   └── run_all_tests.py # Test runner
 └── README.md        # This file
 ```
 
@@ -132,6 +138,31 @@ The bot can be deployed on any platform that supports Python:
 ### Database Operations
 
 All database operations are centralized in `database.py` for easy maintenance and testing.
+
+## Testing
+
+The project includes a comprehensive test suite in the `tests/` directory:
+
+### Running Tests
+
+**Run all tests:**
+```bash
+python tests/run_all_tests.py
+```
+
+**Run specific tests:**
+```bash
+python tests/test_bot.py      # Main functionality tests
+python tests/test_database.py # Database tests
+python tests/test_diario.py   # Diario command tests
+```
+
+### Test Coverage
+
+- **test_bot.py**: Tests imports, configuration, and basic functionality
+- **test_database.py**: Tests database operations, CRUD operations, and aggregate functions
+- **test_diario.py**: Tests the diario command logic with and without sample data
+- **run_all_tests.py**: Test runner that executes all tests and provides a summary
 
 ## License
 

@@ -136,13 +136,21 @@ async def diario_cmd(update: Update, context: CallbackContext) -> None:
         try:
             # Create chart
             fig, ax = plt.subplots(figsize=(10, 6))
-            ax.plot(dates, vals, marker="o", linewidth=2, markersize=6)
+            # Convert dates to matplotlib dates for plotting
+            import matplotlib.dates as mdates
+            dates_mpl = [mdates.date2num(d) for d in dates]
+            ax.plot(dates_mpl, vals, marker="o", linewidth=2, markersize=6)
             ax.set_title("Evolución peso - Últimos 6 días", fontsize=14, fontweight='bold')
             ax.set_ylabel("Kg", fontsize=12)
             ax.set_xlabel("Fecha", fontsize=12)
             ax.grid(True, alpha=0.3)
             ax.tick_params(axis='x', rotation=45)
-            for i, (date, weight) in enumerate(zip(dates, vals)):
+            
+            # Format x-axis to show dates properly
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+            ax.xaxis.set_major_locator(mdates.DayLocator())
+            
+            for i, (date, weight) in enumerate(zip(dates_mpl, vals)):
                 ax.annotate(f'{weight:.1f}', (date, weight), 
                            textcoords="offset points", xytext=(0,10), 
                            ha='center', fontsize=10)
