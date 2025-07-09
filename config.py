@@ -5,7 +5,7 @@ import pytz
 
 # Database configuration
 # Use a directory that Railway preserves between deploys
-DB_DIR = os.getenv("WEIGHT_DB_DIR", "/app/data")
+DB_DIR = os.getenv("WEIGHT_DB_DIR", "/tmp")
 DB_FILE = os.path.join(DB_DIR, os.getenv("WEIGHT_DB_NAME", "weights.db"))
 
 # Supabase configuration

@@ -67,18 +67,23 @@ class BackupManager:
     def restore_latest_backup(self) -> bool:
         """Restore the latest backup from Supabase Storage."""
         if not self.supabase:
+            print("❌ No Supabase client available")
             return False
         
         try:
+            print("📋 Listing backups from Supabase...")
             # List all backups
             backups = self.supabase.storage.from_(self.bucket_name).list()
+            print(f"📦 Found {len(backups)} files in bucket")
             
             if not backups:
                 print("ℹ️ No backups found")
                 return False
             
             # Find the latest backup
-            backup_files = [f for f in backups if f.startswith("weights_backup_")]
+            backup_files = [f['name'] for f in backups if f['name'].startswith("weights_backup_")]
+            print(f"🔍 Found {len(backup_files)} backup files")
+            
             if not backup_files:
                 print("ℹ️ No backup files found")
                 return False
@@ -90,12 +95,15 @@ class BackupManager:
             print(f"📥 Restoring from: {latest_backup}")
             
             # Download backup
+            print("⬇️ Downloading backup file...")
             response = self.supabase.storage.from_(self.bucket_name).download(latest_backup)
+            print(f"📏 Downloaded {len(response)} bytes")
             
             # Create database directory if needed
             os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
             
             # Write backup to database file
+            print(f"💾 Writing to: {DB_FILE}")
             with open(DB_FILE, 'wb') as f:
                 f.write(response)
             
@@ -104,6 +112,8 @@ class BackupManager:
             
         except Exception as e:
             print(f"❌ Restore failed: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def list_backups(self) -> list:
@@ -113,7 +123,7 @@ class BackupManager:
         
         try:
             backups = self.supabase.storage.from_(self.bucket_name).list()
-            backup_files = [f for f in backups if f.startswith("weights_backup_")]
+            backup_files = [f['name'] for f in backups if f['name'].startswith("weights_backup_")]
             backup_files.sort(reverse=True)
             return backup_files
         except Exception as e:
@@ -129,8 +139,16 @@ def auto_backup():
 
 def restore_if_needed():
     """Restore from backup if database doesn't exist."""
+    print(f"🔍 Checking if database exists: {DB_FILE}")
     if not os.path.exists(DB_FILE):
         print("📥 Database not found, attempting to restore from backup...")
         manager = BackupManager()
-        return manager.restore_latest_backup()
-    return False 
+        success = manager.restore_latest_backup()
+        if success:
+            print("✅ Database restored successfully")
+        else:
+            print("❌ Database restoration failed")
+        return success
+    else:
+        print(f"✅ Database already exists: {DB_FILE}")
+        return False 
