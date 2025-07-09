@@ -4,7 +4,9 @@ import os
 import pytz
 
 # Database configuration
-DB_FILE = os.getenv("WEIGHT_DB", "weights.db")
+# Use a directory within the project that Railway preserves
+DB_DIR = os.getenv("WEIGHT_DB_DIR", "data")
+DB_FILE = os.path.join(DB_DIR, os.getenv("WEIGHT_DB_NAME", "weights.db"))
 
 # Bot configuration
 TOKEN = os.getenv("TELEGRAM_TOKEN")

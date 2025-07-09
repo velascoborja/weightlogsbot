@@ -5,11 +5,15 @@ import sqlite3
 from contextlib import closing
 from typing import List, Tuple
 
-from config import DB_FILE
+from config import DB_FILE, DB_DIR
 
 
 def init_db() -> None:
     """Initialize the database with the weights table."""
+    # Create database directory if it doesn't exist
+    import os
+    os.makedirs(DB_DIR, exist_ok=True)
+    
     with closing(sqlite3.connect(DB_FILE)) as conn:
         conn.execute(
             """

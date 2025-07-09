@@ -174,6 +174,7 @@ cython_debug/
 *.sqlite
 *.sqlite3
 weights.db
+data/
 
 # Log files
 *.log
