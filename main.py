@@ -30,6 +30,7 @@ from handlers import (
     diario_cmd,
     numeric_listener,
 )
+from jobs import register_jobs
 
 
 def main() -> None:

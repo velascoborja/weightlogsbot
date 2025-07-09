@@ -15,6 +15,11 @@ from database import save_weight, get_monthly_weights, get_weekly_weights, get_d
 async def start(update: Update, context: CallbackContext) -> None:
     """Handle the /start command."""
     user = update.effective_user
+    
+    # Register scheduled jobs for this user
+    from jobs import register_jobs
+    register_jobs(context.application, user.id)
+    
     await update.message.reply_text(
         f"Hola {user.first_name}!\n"
         "Cada día a las 08:00 te preguntaré tu peso.\n"

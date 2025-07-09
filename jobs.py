@@ -78,7 +78,7 @@ async def monthly_summary_job(context: CallbackContext) -> None:
     await context.bot.send_photo(uid, InputFile(buf, "peso.png"), caption=caption)
 
 
-async def register_jobs(app, user_id: int):
+def register_jobs(app, user_id: int):
     """Register all scheduled jobs for a user."""
     # Remove previous jobs for this user
     for job in app.job_queue.get_jobs_by_name(str(user_id)):
