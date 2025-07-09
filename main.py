@@ -11,6 +11,9 @@ Usage:
     python main.py
 """
 
+import signal
+import sys
+import asyncio
 from telegram.ext import (
     AIORateLimiter,
     ApplicationBuilder,
@@ -34,8 +37,23 @@ from handlers import (
 from jobs import register_jobs
 
 
+async def shutdown(app):
+    """Graceful shutdown function."""
+    print("🛑 Shutting down bot gracefully...")
+    await app.stop()
+    await app.shutdown()
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals."""
+    print(f"📡 Received signal {signum}, shutting down...")
+    sys.exit(0)
+
 def main() -> None:
     """Initialize and run the Telegram bot."""
+    # Set up signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     # Validate configuration
     validate_config()
     
@@ -64,9 +82,20 @@ def main() -> None:
     # Add message handler for numeric input
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), numeric_listener))
 
-    # Start polling
-    print("Bot started. Press Ctrl+C to stop.")
-    app.run_polling()
+    # Start polling with graceful shutdown
+    print("🤖 Bot started. Press Ctrl+C to stop.")
+    try:
+        app.run_polling(
+            allowed_updates=["message", "callback_query"],
+            drop_pending_updates=True,  # Ignore old messages during startup
+            close_loop=False
+        )
+    except KeyboardInterrupt:
+        print("🛑 Received interrupt signal, shutting down...")
+    except Exception as e:
+        print(f"❌ Error running bot: {e}")
+    finally:
+        print("👋 Bot stopped.")
 
 
 if __name__ == "__main__":
