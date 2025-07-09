@@ -21,6 +21,7 @@ from telegram.ext import (
 
 from config import TOKEN, validate_config
 from database import init_db
+from backup_manager import restore_if_needed, auto_backup
 from handlers import (
     start,
     help_cmd,
@@ -37,6 +38,9 @@ def main() -> None:
     """Initialize and run the Telegram bot."""
     # Validate configuration
     validate_config()
+    
+    # Try to restore from backup if database doesn't exist
+    restore_if_needed()
     
     # Initialize database
     init_db()

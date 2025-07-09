@@ -10,6 +10,7 @@ from telegram.ext import CallbackContext
 
 from config import TZ
 from database import save_weight, get_monthly_weights, get_weekly_weights, get_daily_weights, get_weights
+from backup_manager import auto_backup
 
 
 async def start(update: Update, context: CallbackContext) -> None:
@@ -50,6 +51,10 @@ async def _register_weight_arg(update: Update, context: CallbackContext, arg: st
     today = dt.datetime.now(TZ).date()
     save_weight(user_id, today, weight)
     context.user_data["awaiting_weight"] = False
+    
+    # Create backup after saving weight
+    auto_backup()
+    
     await update.message.reply_text(f"Peso registrado: {weight:.1f} kg ✅")
 
 

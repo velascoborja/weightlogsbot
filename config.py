@@ -4,9 +4,13 @@ import os
 import pytz
 
 # Database configuration
-# Use a directory within the project that Railway preserves
-DB_DIR = os.getenv("WEIGHT_DB_DIR", "data")
+# Use a directory that Railway preserves between deploys
+DB_DIR = os.getenv("WEIGHT_DB_DIR", "/app/data")
 DB_FILE = os.path.join(DB_DIR, os.getenv("WEIGHT_DB_NAME", "weights.db"))
+
+# Supabase configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 
 # Bot configuration
 TOKEN = os.getenv("TELEGRAM_TOKEN")
