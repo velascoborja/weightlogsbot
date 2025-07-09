@@ -80,6 +80,9 @@ async def monthly_summary_job(context: CallbackContext) -> None:
 
 def register_jobs(app, user_id: int):
     """Register all scheduled jobs for a user."""
+    if not hasattr(app, 'job_queue') or app.job_queue is None:
+        print(f"[ERROR] Application has no job_queue! Scheduled jobs will not be registered for user {user_id}.")
+        return
     # Remove previous jobs for this user
     for job in app.job_queue.get_jobs_by_name(str(user_id)):
         job.schedule_removal()
