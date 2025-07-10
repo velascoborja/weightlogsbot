@@ -11,15 +11,16 @@ from telegram.ext import CallbackContext
 from config import TZ
 from database import get_weights
 
+def is_first_day_of_month():
+    today = dt.datetime.now(TZ).date()
+    return today.day == 1
 
 async def ask_weight_job(context: CallbackContext) -> None:
-    """Daily job to ask users for their weight."""
     uid = context.job.data["user_id"]
+    print(f"[DEBUG] Enviando recordatorio diario a {uid}")
     await context.bot.send_message(uid, "Buenos días ☀️ ¿Cuál es tu peso de hoy?")
 
-
 async def weekly_summary_job(context: CallbackContext) -> None:
-    """Weekly job to send weight summary comparing current vs previous week."""
     uid = context.job.data["user_id"]
     today = dt.datetime.now(TZ).date()
     this_start = today - dt.timedelta(days=today.weekday())
@@ -40,9 +41,9 @@ async def weekly_summary_job(context: CallbackContext) -> None:
         f"{'⬇️ -' if diff<0 else '⬆️ +'}{abs(diff):.1f} kg",
     )
 
-
 async def monthly_summary_job(context: CallbackContext) -> None:
-    """Monthly job to send weight evolution chart."""
+    if not is_first_day_of_month():
+        return
     uid = context.job.data["user_id"]
     today = dt.datetime.now(TZ).date()
     last_month_end = today.replace(day=1) - dt.timedelta(days=1)
@@ -55,20 +56,17 @@ async def monthly_summary_job(context: CallbackContext) -> None:
     dates = [d for d, _ in ws]
     vals = [w for _, w in ws]
     
-    # Create chart
     fig, ax = plt.subplots()
     ax.plot(dates, vals, marker="o")
     ax.set_title(last_month_start.strftime("Evolución peso – %B %Y"))
     ax.set_ylabel("Kg")
     ax.grid(True)
     
-    # Save to buffer
     buf = io.BytesIO()
     fig.savefig(buf, format="png")
     plt.close(fig)
     buf.seek(0)
     
-    # Calculate difference and send
     diff = vals[-1] - vals[0]
     caption = (
         f"{last_month_start.strftime('%b %Y')}: inicio {vals[0]:.1f} kg / fin {vals[-1]:.1f} kg\n"
@@ -77,14 +75,16 @@ async def monthly_summary_job(context: CallbackContext) -> None:
     
     await context.bot.send_photo(uid, InputFile(buf, "peso.png"), caption=caption)
 
-
 def register_jobs(app, user_id: int):
-    """Register all scheduled jobs for a user."""
     if not hasattr(app, 'job_queue') or app.job_queue is None:
         print(f"[ERROR] Application has no job_queue! Scheduled jobs will not be registered for user {user_id}.")
         return
     # Remove previous jobs for this user
     for job in app.job_queue.get_jobs_by_name(str(user_id)):
+        job.schedule_removal()
+    for job in app.job_queue.get_jobs_by_name(f"weekly_{user_id}"):
+        job.schedule_removal()
+    for job in app.job_queue.get_jobs_by_name(f"monthly_{user_id}"):
         job.schedule_removal()
 
     # Daily weight question
@@ -96,19 +96,18 @@ def register_jobs(app, user_id: int):
     )
 
     # Weekly summary (Monday 08:10)
-    app.job_queue.run_weekly(
+    app.job_queue.run_daily(
         weekly_summary_job,
         time=dt.time(hour=8, minute=10, tzinfo=TZ),
-        day_of_week=0,
+        days=(0,),  # 0 = Monday
         data={"user_id": user_id},
-        name=str(user_id),
+        name=f"weekly_{user_id}",
     )
 
     # Monthly chart (1st day at 08:15)
-    app.job_queue.run_monthly(
+    app.job_queue.run_daily(
         monthly_summary_job,
         time=dt.time(hour=8, minute=15, tzinfo=TZ),
-        day=1,
         data={"user_id": user_id},
-        name=str(user_id),
+        name=f"monthly_{user_id}",
     ) 
