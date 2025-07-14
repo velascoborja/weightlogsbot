@@ -11,35 +11,31 @@ from telegram.ext import CallbackContext
 from config import TZ
 from database import save_weight, get_monthly_weights, get_weekly_weights, get_daily_weights, get_weights
 from backup_manager import auto_backup
+from lang.strings import get_strings
 
 
 async def start(update: Update, context: CallbackContext) -> None:
     """Handle the /start command."""
     user = update.effective_user
+    strings = get_strings(user.language_code)
     
     # Register scheduled jobs for this user
     from jobs import register_jobs
     register_jobs(context.application, user.id)
     
     await update.message.reply_text(
-        f"Hola {user.first_name}!\n"
-        "Cada día a las 08:00 te preguntaré tu peso.\n"
-        "Puedes registrar cuando quieras usando /peso <kg> o /peso sin número.\n"
-        "Usa /diario para ver tus pesos con gráfico de evolución."
+        strings["start_message"].format(first_name=user.first_name)
     )
 
 
 async def help_cmd(update: Update, context: CallbackContext) -> None:
     """Handle the /help command."""
-    await update.message.reply_text(
-        "/peso [kg] – registra tu peso ahora (o pregunta si omites número)\n"
-        "/mensual – media de los últimos 6 meses\n"
-        "/semanal – media de las últimas 4 semanas\n"
-        "/diario – pesos de los últimos 6 días + gráfico"
-    )
+    strings = get_strings(update.effective_user.language_code)
+    await update.message.reply_text(strings["help_message"])
 
 
 async def send_diario_chart(update: Update, user_id: int):
+    strings = get_strings(update.effective_user.language_code)
     today = dt.datetime.now(TZ).date()
     start_date = today - dt.timedelta(days=5)
     weights_data = get_weights(user_id, start_date, today)
@@ -69,7 +65,7 @@ async def send_diario_chart(update: Update, user_id: int):
             buf.seek(0)
             await update.message.reply_photo(
                 InputFile(buf, "peso_diario.png"),
-                caption="📈 Gráfico de evolución de peso - Últimos 6 días"
+                caption=strings["diario_chart_caption"]
             )
         except Exception as e:
             print(f"[ERROR] Error generating or sending the chart: {e}")
@@ -77,10 +73,11 @@ async def send_diario_chart(update: Update, user_id: int):
 
 async def _register_weight_arg(update: Update, context: CallbackContext, arg: str) -> None:
     """Register weight from command argument or user input."""
+    strings = get_strings(update.effective_user.language_code)
     try:
         weight = float(arg.replace(",", "."))
     except ValueError:
-        await update.message.reply_text("Número no válido. Ejemplo: /peso 72.4")
+        await update.message.reply_text(strings["invalid_number"])
         return
     
     user_id = update.effective_user.id
@@ -93,19 +90,20 @@ async def _register_weight_arg(update: Update, context: CallbackContext, arg: st
     # Create backup after saving weight
     auto_backup()
     
-    await update.message.reply_text(f"Peso registrado: {weight:.1f} kg ✅")
+    await update.message.reply_text(strings["weight_registered"].format(weight=weight))
     # Send daily chart after registering weight
     await send_diario_chart(update, user_id)
 
 
 async def peso_cmd(update: Update, context: CallbackContext) -> None:
     """Handle the /peso command."""
+    strings = get_strings(update.effective_user.language_code)
     # If a number is provided, register directly
     if context.args:
         await _register_weight_arg(update, context, context.args[0])
     else:
         # Ask and wait for response
-        await update.message.reply_text("¿Cuánto pesas ahora? Responde solo con el número.")
+        await update.message.reply_text(strings["ask_weight_now"])
         context.user_data["awaiting_weight"] = True
 
 
@@ -123,6 +121,7 @@ async def numeric_listener(update: Update, context: CallbackContext) -> None:
 
 
 async def send_mensual_chart(update: Update, user_id: int):
+    strings = get_strings(update.effective_user.language_code)
     monthly_data = get_monthly_weights(user_id)
     # Solo graficar meses con datos
     labels = [m for m, w in monthly_data if w is not None]
@@ -144,12 +143,13 @@ async def send_mensual_chart(update: Update, user_id: int):
             buf.seek(0)
             await update.message.reply_photo(
                 InputFile(buf, "peso_mensual.png"),
-                caption="📈 Media mensual de peso - Últimos 6 meses"
+                caption=strings["mensual_chart_caption"]
             )
         except Exception as e:
             print(f"[ERROR] Error generando o enviando el gráfico mensual: {e}")
 
 async def send_semanal_chart(update: Update, user_id: int):
+    strings = get_strings(update.effective_user.language_code)
     weekly_data = get_weekly_weights(user_id)
     # Only plot weeks with data
     labels = [s for s, w in weekly_data if w is not None]
@@ -171,29 +171,31 @@ async def send_semanal_chart(update: Update, user_id: int):
             buf.seek(0)
             await update.message.reply_photo(
                 InputFile(buf, "peso_semanal.png"),
-                caption="📈 Media semanal de peso - Últimas 4 semanas"
+                caption=strings["semanal_chart_caption"]
             )
         except Exception as e:
             print(f"[ERROR] Error generating or sending the weekly chart: {e}")
 
 
 async def mensual_cmd(update: Update, context: CallbackContext) -> None:
+    strings = get_strings(update.effective_user.language_code)
     user_id = update.effective_user.id
     monthly_data = get_monthly_weights(user_id)
-    lines = ["📊 Media últimos 6 meses:"]
+    lines = [strings["mensual_header"]]
     for month_name, avg_weight in monthly_data:
-        weight_text = f"{avg_weight:.1f} kg" if avg_weight is not None else "sin datos"
+        weight_text = f"{avg_weight:.1f} kg" if avg_weight is not None else strings["no_data"]
         lines.append(f"{month_name}: {weight_text}")
     await update.message.reply_text("\n".join(lines))
     # Enviar gráfico mensual
     await send_mensual_chart(update, user_id)
 
 async def semanal_cmd(update: Update, context: CallbackContext) -> None:
+    strings = get_strings(update.effective_user.language_code)
     user_id = update.effective_user.id
     weekly_data = get_weekly_weights(user_id)
-    lines = ["📅 Media últimas 4 semanas:"]
+    lines = [strings["semanal_header"]]
     for span, avg_weight in weekly_data:
-        weight_text = f"{avg_weight:.1f} kg" if avg_weight is not None else "sin datos"
+        weight_text = f"{avg_weight:.1f} kg" if avg_weight is not None else strings["no_data"]
         lines.append(f"{span}: {weight_text}")
     await update.message.reply_text("\n".join(lines))
     # Enviar gráfico semanal
@@ -201,6 +203,7 @@ async def semanal_cmd(update: Update, context: CallbackContext) -> None:
 
 
 async def diario_cmd(update: Update, context: CallbackContext) -> None:
+    strings = get_strings(update.effective_user.language_code)
     print("[DEBUG] Entering diario_cmd")
     user_id = update.effective_user.id
     today = dt.datetime.now(TZ).date()
@@ -211,12 +214,12 @@ async def diario_cmd(update: Update, context: CallbackContext) -> None:
     weights_data = get_weights(user_id, start_date, today)
     print(f"[DEBUG] weights_data: {weights_data}")
     # Prepare text response
-    lines = ["📆 Pesos últimos 6 días:"]
+    lines = [strings["diario_header"]]
     for i in range(6):
         d = today - dt.timedelta(days=i)
         ws = get_weights(user_id, d, d)
         print(f"[DEBUG] Day: {d}, ws: {ws}")
-        weight_text = f"{ws[0][1]:.1f} kg" if ws else "sin datos"
+        weight_text = f"{ws[0][1]:.1f} kg" if ws else strings["no_data"]
         lines.append(f"{d.strftime('%d/%m')}: {weight_text}")
     print(f"[DEBUG] lines: {lines}")
     # Send text first
