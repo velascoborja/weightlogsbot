@@ -122,30 +122,82 @@ async def numeric_listener(update: Update, context: CallbackContext) -> None:
     await _register_weight_arg(update, context, text)
 
 
+async def send_mensual_chart(update: Update, user_id: int):
+    monthly_data = get_monthly_weights(user_id)
+    # Solo graficar meses con datos
+    labels = [m for m, w in monthly_data if w is not None]
+    values = [w for m, w in monthly_data if w is not None]
+    if len(values) >= 2:
+        try:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot(labels[::-1], values[::-1], marker="o", linewidth=2, markersize=6)
+            ax.set_title("Media mensual de peso - Últimos 6 meses", fontsize=14, fontweight='bold')
+            ax.set_ylabel("Kg", fontsize=12)
+            ax.set_xlabel("Mes", fontsize=12)
+            ax.grid(True, alpha=0.3)
+            for i, (label, weight) in enumerate(zip(labels[::-1], values[::-1])):
+                ax.annotate(f'{weight:.1f}', (i, weight), textcoords="offset points", xytext=(0,10), ha='center', fontsize=10)
+            plt.tight_layout()
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", dpi=150, bbox_inches='tight')
+            plt.close(fig)
+            buf.seek(0)
+            await update.message.reply_photo(
+                InputFile(buf, "peso_mensual.png"),
+                caption="📈 Media mensual de peso - Últimos 6 meses"
+            )
+        except Exception as e:
+            print(f"[ERROR] Error generando o enviando el gráfico mensual: {e}")
+
+async def send_semanal_chart(update: Update, user_id: int):
+    weekly_data = get_weekly_weights(user_id)
+    # Solo graficar semanas con datos
+    labels = [s for s, w in weekly_data if w is not None]
+    values = [w for s, w in weekly_data if w is not None]
+    if len(values) >= 2:
+        try:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot(labels[::-1], values[::-1], marker="o", linewidth=2, markersize=6)
+            ax.set_title("Media semanal de peso - Últimas 4 semanas", fontsize=14, fontweight='bold')
+            ax.set_ylabel("Kg", fontsize=12)
+            ax.set_xlabel("Semana", fontsize=12)
+            ax.grid(True, alpha=0.3)
+            for i, (label, weight) in enumerate(zip(labels[::-1], values[::-1])):
+                ax.annotate(f'{weight:.1f}', (i, weight), textcoords="offset points", xytext=(0,10), ha='center', fontsize=10)
+            plt.tight_layout()
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", dpi=150, bbox_inches='tight')
+            plt.close(fig)
+            buf.seek(0)
+            await update.message.reply_photo(
+                InputFile(buf, "peso_semanal.png"),
+                caption="📈 Media semanal de peso - Últimas 4 semanas"
+            )
+        except Exception as e:
+            print(f"[ERROR] Error generando o enviando el gráfico semanal: {e}")
+
+
 async def mensual_cmd(update: Update, context: CallbackContext) -> None:
-    """Handle the /mensual command."""
     user_id = update.effective_user.id
     monthly_data = get_monthly_weights(user_id)
-    
     lines = ["📊 Media últimos 6 meses:"]
     for month_name, avg_weight in monthly_data:
         weight_text = f"{avg_weight:.1f} kg" if avg_weight is not None else "sin datos"
         lines.append(f"{month_name}: {weight_text}")
-    
     await update.message.reply_text("\n".join(lines))
-
+    # Enviar gráfico mensual
+    await send_mensual_chart(update, user_id)
 
 async def semanal_cmd(update: Update, context: CallbackContext) -> None:
-    """Handle the /semanal command."""
     user_id = update.effective_user.id
     weekly_data = get_weekly_weights(user_id)
-    
     lines = ["📅 Media últimas 4 semanas:"]
     for span, avg_weight in weekly_data:
         weight_text = f"{avg_weight:.1f} kg" if avg_weight is not None else "sin datos"
         lines.append(f"{span}: {weight_text}")
-    
     await update.message.reply_text("\n".join(lines))
+    # Enviar gráfico semanal
+    await send_semanal_chart(update, user_id)
 
 
 async def diario_cmd(update: Update, context: CallbackContext) -> None:
