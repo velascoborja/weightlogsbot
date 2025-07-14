@@ -224,3 +224,6 @@ settings_local.py
 tests/*.db
 tests/*.sqlite
 tests/*.sqlite3
+
+__pycache__/
+*.pyc
