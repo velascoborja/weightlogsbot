@@ -1,5 +1,5 @@
-from strings_en import STRINGS as STRINGS_EN
-from strings_es import STRINGS as STRINGS_ES
+from .strings_en import STRINGS as STRINGS_EN
+from .strings_es import STRINGS as STRINGS_ES
 
 LANG_MAP = {
     "en": STRINGS_EN,
