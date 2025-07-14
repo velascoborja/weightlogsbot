@@ -72,7 +72,7 @@ async def send_diario_chart(update: Update, user_id: int):
                 caption="📈 Gráfico de evolución de peso - Últimos 6 días"
             )
         except Exception as e:
-            print(f"[ERROR] Error generando o enviando el gráfico: {e}")
+            print(f"[ERROR] Error generating or sending the chart: {e}")
 
 
 async def _register_weight_arg(update: Update, context: CallbackContext, arg: str) -> None:
@@ -87,24 +87,24 @@ async def _register_weight_arg(update: Update, context: CallbackContext, arg: st
     today = dt.datetime.now(TZ).date()
     save_weight(user_id, today, weight)
     context.user_data["awaiting_weight"] = False
-    # Limpiar bandera de chat_data si existe
+    # Clear chat_data flag if exists
     if hasattr(context, "chat_data") and context.chat_data is not None:
         context.chat_data.pop("expecting_daily_weight", None)
     # Create backup after saving weight
     auto_backup()
     
     await update.message.reply_text(f"Peso registrado: {weight:.1f} kg ✅")
-    # Enviar gráfico diario tras registrar peso
+    # Send daily chart after registering weight
     await send_diario_chart(update, user_id)
 
 
 async def peso_cmd(update: Update, context: CallbackContext) -> None:
     """Handle the /peso command."""
-    # Si viene número, registrar directamente
+    # If a number is provided, register directly
     if context.args:
         await _register_weight_arg(update, context, context.args[0])
     else:
-        # Preguntar y esperar respuesta
+        # Ask and wait for response
         await update.message.reply_text("¿Cuánto pesas ahora? Responde solo con el número.")
         context.user_data["awaiting_weight"] = True
 
@@ -151,7 +151,7 @@ async def send_mensual_chart(update: Update, user_id: int):
 
 async def send_semanal_chart(update: Update, user_id: int):
     weekly_data = get_weekly_weights(user_id)
-    # Solo graficar semanas con datos
+    # Only plot weeks with data
     labels = [s for s, w in weekly_data if w is not None]
     values = [w for s, w in weekly_data if w is not None]
     if len(values) >= 2:
@@ -174,7 +174,7 @@ async def send_semanal_chart(update: Update, user_id: int):
                 caption="📈 Media semanal de peso - Últimas 4 semanas"
             )
         except Exception as e:
-            print(f"[ERROR] Error generando o enviando el gráfico semanal: {e}")
+            print(f"[ERROR] Error generating or sending the weekly chart: {e}")
 
 
 async def mensual_cmd(update: Update, context: CallbackContext) -> None:
@@ -201,7 +201,7 @@ async def semanal_cmd(update: Update, context: CallbackContext) -> None:
 
 
 async def diario_cmd(update: Update, context: CallbackContext) -> None:
-    print("[DEBUG] Entrando a diario_cmd")
+    print("[DEBUG] Entering diario_cmd")
     user_id = update.effective_user.id
     today = dt.datetime.now(TZ).date()
     print(f"[DEBUG] user_id: {user_id}, today: {today}")
@@ -215,15 +215,15 @@ async def diario_cmd(update: Update, context: CallbackContext) -> None:
     for i in range(6):
         d = today - dt.timedelta(days=i)
         ws = get_weights(user_id, d, d)
-        print(f"[DEBUG] Día: {d}, ws: {ws}")
+        print(f"[DEBUG] Day: {d}, ws: {ws}")
         weight_text = f"{ws[0][1]:.1f} kg" if ws else "sin datos"
         lines.append(f"{d.strftime('%d/%m')}: {weight_text}")
     print(f"[DEBUG] lines: {lines}")
     # Send text first
     try:
         await update.message.reply_text("\n".join(lines))
-        print("[DEBUG] Mensaje de texto enviado")
+        print("[DEBUG] Text message sent")
     except Exception as e:
-        print(f"[ERROR] Error enviando mensaje de texto: {e}")
-    # Enviar gráfico diario
+        print(f"[ERROR] Error sending text message: {e}")
+    # Send daily chart
     await send_diario_chart(update, user_id) 
