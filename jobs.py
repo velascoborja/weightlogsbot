@@ -16,8 +16,18 @@ def is_first_day_of_month():
     return today.day == 1
 
 async def ask_weight_job(context: CallbackContext) -> None:
-    uid = context.job.data["user_id"]
+    uid = None
+    # context.job.data puede ser dict, pero el linter lo ve como object
+    data = getattr(getattr(context, "job", None), "data", None)
+    if isinstance(data, dict):
+        uid = data.get("user_id")
+    if uid is None:
+        print("[ERROR] No se pudo obtener el user_id en ask_weight_job")
+        return
     print(f"[DEBUG] Enviando recordatorio diario a {uid}")
+    # Marcar que se espera el peso en chat_data
+    if context.chat_data is not None:
+        context.chat_data["expecting_daily_weight"] = True
     await context.bot.send_message(uid, "Buenos días ☀️ ¿Cuál es tu peso de hoy?")
 
 async def weekly_summary_job(context: CallbackContext) -> None:

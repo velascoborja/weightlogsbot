@@ -51,7 +51,9 @@ async def _register_weight_arg(update: Update, context: CallbackContext, arg: st
     today = dt.datetime.now(TZ).date()
     save_weight(user_id, today, weight)
     context.user_data["awaiting_weight"] = False
-    
+    # Limpiar bandera de chat_data si existe
+    if hasattr(context, "chat_data") and context.chat_data is not None:
+        context.chat_data.pop("expecting_daily_weight", None)
     # Create backup after saving weight
     auto_backup()
     
