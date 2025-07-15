@@ -20,6 +20,7 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
+    PicklePersistence,
 )
 
 from config import TOKEN, validate_config
@@ -63,10 +64,14 @@ def main() -> None:
     # Initialize database
     init_db()
 
+    # Set up persistence for jobs and user data
+    persistence = PicklePersistence(filepath="bot_data.pkl")
+
     # Build application
     app = (
         ApplicationBuilder()
         .token(TOKEN)
+        .persistence(persistence)
         .rate_limiter(AIORateLimiter())
         .build()
     )
