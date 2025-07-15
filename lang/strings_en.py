@@ -21,4 +21,5 @@ STRINGS = {
     "semanal_header": "📅 Average of the last 4 weeks:",
     "diario_header": "📆 Weights for the last 6 days:",
     "no_data": "no data",
+    "unknown_command": "Sorry, I didn't understand that command. Type /help to see available commands.",
 } 

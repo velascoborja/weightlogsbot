@@ -230,3 +230,7 @@ async def diario_cmd(update: Update, context: CallbackContext) -> None:
         print(f"[ERROR] Error sending text message: {e}")
     # Send daily chart
     await send_diario_chart(update, user_id) 
+
+async def unknown_cmd(update: Update, context: CallbackContext) -> None:
+    strings = get_strings(update.effective_user.language_code)
+    await update.message.reply_text(strings["unknown_command"]) 

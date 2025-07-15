@@ -34,6 +34,7 @@ from handlers import (
     semanal_cmd,
     diario_cmd,
     numeric_listener,
+    unknown_cmd,
 )
 from jobs import register_jobs
 
@@ -86,6 +87,9 @@ def main() -> None:
 
     # Add message handler for numeric input
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), numeric_listener))
+
+    # Add handler for unknown commands
+    app.add_handler(MessageHandler(filters.COMMAND, unknown_cmd))
 
     # Start polling with graceful shutdown
     print("🤖 Bot started. Press Ctrl+C to stop.")
