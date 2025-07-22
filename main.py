@@ -24,7 +24,7 @@ from telegram.ext import (
 )
 
 from config import TOKEN, validate_config
-from database import init_db
+from database import init_db, get_all_user_ids
 from backup_manager import restore_if_needed, auto_backup
 from handlers import (
     start,
@@ -76,6 +76,10 @@ def main() -> None:
         .rate_limiter(AIORateLimiter())
         .build()
     )
+
+    # Register jobs for all users on startup
+    for user_id in get_all_user_ids():
+        register_jobs(app, user_id)
 
     # Add command handlers
     app.add_handler(CommandHandler("start", start))

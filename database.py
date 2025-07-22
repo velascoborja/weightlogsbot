@@ -107,3 +107,10 @@ def get_daily_weights(user_id: int, days_back: int = 6) -> List[Tuple[str, float
         results.append((date_str, weight))
     
     return results 
+
+
+def get_all_user_ids():
+    """Return a list of all unique user_ids in the database."""
+    with closing(sqlite3.connect(DB_FILE)) as conn:
+        cur = conn.execute("SELECT DISTINCT user_id FROM weights")
+        return [row[0] for row in cur.fetchall()] 
