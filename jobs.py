@@ -24,6 +24,13 @@ async def ask_weight_job(context: CallbackContext) -> None:
     if uid is None:
         print("[ERROR] Could not get user_id in ask_weight_job")
         return
+    import datetime as dt
+    today = dt.datetime.now().date()
+    # Check if weight already registered for today
+    weights_today = get_weights(uid, today, today)
+    if weights_today:
+        print(f"[DEBUG] User {uid} already registered weight for today, skipping reminder.")
+        return
     print(f"[DEBUG] Sending daily reminder to {uid}")
     # Mark that weight is expected in chat_data
     if context.chat_data is not None:
