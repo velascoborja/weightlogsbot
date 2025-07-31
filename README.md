@@ -5,11 +5,12 @@ A Telegram bot that tracks daily weight, sends weekly summaries, and monthly rep
 ## Features
 
 - **Daily weight tracking**: Record your weight with `/peso <kg>` or just `/peso` to be prompted
+- **Smart daily reminders**: Daily prompts at 8:00 AM that automatically select for reply - just reply with your weight!
+- **Reply-to-reminder**: When you reply to the daily reminder message with a weight, it's automatically recorded
 - **Weekly summaries**: Automatic comparison of current vs previous week averages
 - **Monthly reports**: Charts showing weight evolution over the month
 - **On-demand reports**: Get daily, weekly, or monthly summaries anytime
 - **Visual charts**: Daily weight evolution charts with the `/diario` command
-- **Automatic reminders**: Daily prompts at 8:00 AM
 
 ## Commands
 
@@ -19,6 +20,8 @@ A Telegram bot that tracks daily weight, sends weekly summaries, and monthly rep
 - `/diario` - Show weights for the last 6 days with evolution chart
 - `/semanal` - Show averages for the last 4 weeks
 - `/mensual` - Show averages for the last 6 months
+
+**Daily Reminder**: The bot automatically sends a daily reminder at 8:00 AM asking for your weight. This message is automatically selected for reply - simply reply with your weight number and it will be recorded!
 
 ## Project Structure
 

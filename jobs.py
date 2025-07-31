@@ -5,7 +5,7 @@ import io
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
-from telegram import InputFile
+from telegram import InputFile, ForceReply
 from telegram.ext import CallbackContext
 
 from config import TZ
@@ -32,10 +32,23 @@ async def ask_weight_job(context: CallbackContext) -> None:
         print(f"[DEBUG] User {uid} already registered weight for today, skipping reminder.")
         return
     print(f"[DEBUG] Sending daily reminder to {uid}")
+    
+    # Send message with force_reply to automatically select it for reply
+    message = await context.bot.send_message(
+        uid, 
+        "Buenos días ☀️ ¿Cuál es tu peso de hoy?",
+        reply_markup=ForceReply(force_reply=True, selective=True)
+    )
+    
+    # Store the reminder message ID in bot_data for this user
+    if context.bot_data is not None:
+        if "reminder_messages" not in context.bot_data:
+            context.bot_data["reminder_messages"] = {}
+        context.bot_data["reminder_messages"][uid] = message.message_id
+    
     # Mark that weight is expected in chat_data
     if context.chat_data is not None:
         context.chat_data["expecting_daily_weight"] = True
-    await context.bot.send_message(uid, "Buenos días ☀️ ¿Cuál es tu peso de hoy?")
 
 async def weekly_summary_job(context: CallbackContext) -> None:
     uid = context.job.data["user_id"]

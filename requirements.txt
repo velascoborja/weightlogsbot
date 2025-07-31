@@ -1,4 +1,0 @@
-python-telegram-bot[rate-limiter,job-queue]==21.1
-matplotlib
-pytz
-supabase

@@ -5,7 +5,7 @@ import io
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
-from telegram import InputFile, Update
+from telegram import InputFile, Update, ForceReply
 from telegram.ext import CallbackContext
 
 from config import TZ
@@ -87,6 +87,13 @@ async def _register_weight_arg(update: Update, context: CallbackContext, arg: st
     # Clear chat_data flag if exists
     if hasattr(context, "chat_data") and context.chat_data is not None:
         context.chat_data.pop("expecting_daily_weight", None)
+    
+    # Clean up any stored reminder message ID for this user
+    if (context.bot_data and 
+        "reminder_messages" in context.bot_data and 
+        user_id in context.bot_data["reminder_messages"]):
+        del context.bot_data["reminder_messages"][user_id]
+    
     # Create backup after saving weight
     auto_backup()
     
@@ -113,11 +120,31 @@ async def numeric_listener(update: Update, context: CallbackContext) -> None:
     if not text.replace(",", ".").replace(".", "", 1).isdigit():
         return
     
-    # Guardamos solo si se esperaba un número o aceptamos números espontáneos
-    if not context.user_data.get("awaiting_weight") and not context.chat_data.get("expecting_daily_weight", False):
-        return
+    user_id = update.effective_user.id
     
-    await _register_weight_arg(update, context, text)
+    # Check if this is a reply to a daily reminder message
+    is_reply_to_reminder = False
+    if update.message.reply_to_message:
+        reply_to_message_id = update.message.reply_to_message.message_id
+        # Check if this is a reply to the stored reminder message
+        if (context.bot_data and 
+            "reminder_messages" in context.bot_data and 
+            user_id in context.bot_data["reminder_messages"] and
+            context.bot_data["reminder_messages"][user_id] == reply_to_message_id):
+            is_reply_to_reminder = True
+            # Clean up the stored reminder message ID
+            del context.bot_data["reminder_messages"][user_id]
+    
+    # Accept weight if:
+    # 1. User is awaiting weight (from /peso command)
+    # 2. Chat is expecting daily weight (general daily reminder)
+    # 3. This is a reply to a daily reminder message
+    if (context.user_data.get("awaiting_weight") or 
+        context.chat_data.get("expecting_daily_weight", False) or 
+        is_reply_to_reminder):
+        await _register_weight_arg(update, context, text)
+    else:
+        return
 
 
 async def send_mensual_chart(update: Update, user_id: int):
