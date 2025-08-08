@@ -87,6 +87,11 @@ async def _register_weight_arg(update: Update, context: CallbackContext, arg: st
     # Clear chat_data flag if exists
     if hasattr(context, "chat_data") and context.chat_data is not None:
         context.chat_data.pop("expecting_daily_weight", None)
+    # Clear any stored reminder message id
+    if getattr(context, "bot_data", None):
+        reminder_map = context.bot_data.get("reminder_messages", {})
+        if user_id in reminder_map:
+            reminder_map.pop(user_id, None)
     # Create backup after saving weight
     auto_backup()
     
@@ -112,11 +117,23 @@ async def numeric_listener(update: Update, context: CallbackContext) -> None:
     text = update.message.text.strip()
     if not text.replace(",", ".").replace(".", "", 1).isdigit():
         return
-    
-    # Guardamos solo si se esperaba un número o aceptamos números espontáneos
-    if not context.user_data.get("awaiting_weight") and not context.chat_data.get("expecting_daily_weight", False):
+
+    user_id = update.effective_user.id
+
+    # Accept if awaiting from /peso, expecting due to daily reminder, or it's a reply to the reminder message
+    awaiting = context.user_data.get("awaiting_weight")
+    expecting = context.chat_data.get("expecting_daily_weight", False)
+
+    is_reply_to_reminder = False
+    if update.message.reply_to_message and getattr(context, "bot_data", None):
+        reminder_map = context.bot_data.get("reminder_messages", {})
+        reminder_mid = reminder_map.get(user_id)
+        if reminder_mid and update.message.reply_to_message.message_id == reminder_mid:
+            is_reply_to_reminder = True
+
+    if not (awaiting or expecting or is_reply_to_reminder):
         return
-    
+
     await _register_weight_arg(update, context, text)
 
 
