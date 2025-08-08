@@ -19,6 +19,8 @@ A Telegram bot that tracks daily weight, sends weekly summaries, and monthly rep
 - `/diario` - Show weights for the last 6 days with evolution chart
 - `/semanal` - Show averages for the last 4 weeks
 - `/mensual` - Show averages for the last 6 months
+- `/silenciar` - Disable morning reminder notifications
+- `/notificar` - Enable morning reminder notifications
 
 ## Project Structure
 

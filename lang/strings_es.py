@@ -22,4 +22,6 @@ STRINGS = {
     "diario_header": "📆 Pesos últimos 6 días:",
     "no_data": "sin datos",
     "unknown_command": "Lo siento, no entendí ese comando. Escribe /help para ver los comandos disponibles.",
+    "reminders_off": "🔕 Recordatorios desactivados. No te enviaré el recordatorio matutino.",
+    "reminders_on": "🔔 Recordatorios activados. Volveré a enviar el recordatorio matutino.",
 } 

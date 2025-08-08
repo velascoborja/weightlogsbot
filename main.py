@@ -35,6 +35,8 @@ from handlers import (
     diario_cmd,
     numeric_listener,
     unknown_cmd,
+    silenciar_cmd,
+    notificar_cmd,
 )
 from jobs import register_jobs
 
@@ -88,6 +90,8 @@ def main() -> None:
     app.add_handler(CommandHandler("mensual", mensual_cmd))
     app.add_handler(CommandHandler("semanal", semanal_cmd))
     app.add_handler(CommandHandler("diario", diario_cmd))
+    app.add_handler(CommandHandler("silenciar", silenciar_cmd))
+    app.add_handler(CommandHandler("notificar", notificar_cmd))
 
     # Add message handler for numeric input
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), numeric_listener))

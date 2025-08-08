@@ -31,6 +31,11 @@ async def ask_weight_job(context: CallbackContext) -> None:
     if weights_today:
         print(f"[DEBUG] User {uid} already registered weight for today, skipping reminder.")
         return
+    # Skip if user has silenced reminders
+    silenced = getattr(context, "bot_data", {}).get("silenced_users", set())
+    if uid in silenced:
+        print(f"[DEBUG] User {uid} has reminders silenced. Skipping.")
+        return
     print(f"[DEBUG] Sending daily reminder to {uid}")
     # Send message with ForceReply so it's auto-selected for reply
     message = await context.bot.send_message(

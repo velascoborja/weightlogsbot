@@ -112,6 +112,26 @@ async def peso_cmd(update: Update, context: CallbackContext) -> None:
         context.user_data["awaiting_weight"] = True
 
 
+async def silenciar_cmd(update: Update, context: CallbackContext) -> None:
+    """Disable morning reminders for this user."""
+    strings = get_strings(update.effective_user.language_code)
+    user_id = update.effective_user.id
+    # Use a set of silenced user IDs stored in bot_data
+    silenced = context.bot_data.setdefault("silenced_users", set())
+    silenced.add(user_id)
+    await update.message.reply_text(strings.get("reminders_off", "🔕 Recordatorios desactivados. No te enviaré el recordatorio matutino."))
+
+
+async def notificar_cmd(update: Update, context: CallbackContext) -> None:
+    """Enable morning reminders for this user."""
+    strings = get_strings(update.effective_user.language_code)
+    user_id = update.effective_user.id
+    silenced = context.bot_data.setdefault("silenced_users", set())
+    if user_id in silenced:
+        silenced.remove(user_id)
+    await update.message.reply_text(strings.get("reminders_on", "🔔 Recordatorios activados. Volveré a enviar el recordatorio matutino."))
+
+
 async def numeric_listener(update: Update, context: CallbackContext) -> None:
     """Handle numeric input from users."""
     text = update.message.text.strip()
