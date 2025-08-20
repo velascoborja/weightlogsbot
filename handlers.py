@@ -9,7 +9,7 @@ from telegram import InputFile, Update
 from telegram.ext import CallbackContext
 
 from config import TZ
-from database import save_weight, get_monthly_weights, get_weekly_weights, get_daily_weights, get_weights
+from database import save_weight, get_monthly_weights, get_weekly_weights, get_daily_weights, get_weights, save_user_language
 from backup_manager import auto_backup
 from lang.strings import get_strings
 
@@ -18,6 +18,9 @@ async def start(update: Update, context: CallbackContext) -> None:
     """Handle the /start command."""
     user = update.effective_user
     strings = get_strings(user.language_code)
+    
+    # Save user's language preference
+    save_user_language(user.id, user.language_code or 'es')
     
     # Register scheduled jobs for this user
     from jobs import register_jobs

@@ -9,7 +9,8 @@ from telegram import InputFile, ForceReply
 from telegram.ext import CallbackContext
 
 from config import TZ
-from database import get_weights
+from database import get_weights, get_user_language
+from lang.strings import get_strings
 
 def is_first_day_of_month():
     today = dt.datetime.now(TZ).date()
@@ -36,11 +37,16 @@ async def ask_weight_job(context: CallbackContext) -> None:
     if uid in silenced:
         print(f"[DEBUG] User {uid} has reminders silenced. Skipping.")
         return
+    
+    # Get user's language preference
+    lang_code = get_user_language(uid)
+    strings = get_strings(lang_code)
+    
     print(f"[DEBUG] Sending daily reminder to {uid}")
     # Send message with ForceReply so it's auto-selected for reply
     message = await context.bot.send_message(
         uid,
-        "Buenos días ☀️ ¿Cuál es tu peso de hoy?",
+        strings["daily_reminder"],
         reply_markup=ForceReply(selective=True)
     )
     # Store reminder message id to detect replies
@@ -61,15 +67,28 @@ async def weekly_summary_job(context: CallbackContext) -> None:
     if len(this_ws) < 2 or len(last_ws) < 2:
         return
     
+    # Get user's language preference
+    lang_code = get_user_language(uid)
+    strings = get_strings(lang_code)
+    
     avg_this = sum(w for _, w in this_ws) / len(this_ws)
     avg_last = sum(w for _, w in last_ws) / len(last_ws)
     diff = avg_this - avg_last
-    
-    await context.bot.send_message(
-        uid,
-        f"Resumen semanal:\nActual {avg_this:.1f} kg vs. Anterior {avg_last:.1f} kg → "
-        f"{'⬇️ -' if diff<0 else '⬆️ +'}{abs(diff):.1f} kg",
+    diff_r = round(diff, 1)
+
+    if diff_r == 0.0:
+        change = strings["weekly_no_change"]
+    elif diff_r < 0:
+        change = strings["weekly_decrease"].format(diff=abs(diff_r))
+    else:
+        change = strings["weekly_increase"].format(diff=diff_r)
+
+    text = (
+        f"{strings['weekly_summary_header']}\n"
+        f"{strings['weekly_summary_format'].format(current=avg_this, previous=avg_last, change=change)}"
     )
+
+    await context.bot.send_message(uid, text)
 
 async def monthly_summary_job(context: CallbackContext) -> None:
     if not is_first_day_of_month():
@@ -83,12 +102,16 @@ async def monthly_summary_job(context: CallbackContext) -> None:
     if len(ws) < 2:
         return
     
+    # Get user's language preference
+    lang_code = get_user_language(uid)
+    strings = get_strings(lang_code)
+    
     dates = [d for d, _ in ws]
     vals = [w for _, w in ws]
     
     fig, ax = plt.subplots()
     ax.plot(dates, vals, marker="o")
-    ax.set_title(last_month_start.strftime("Evolución peso – %B %Y"))
+    ax.set_title(last_month_start.strftime(strings["monthly_chart_title"]))
     ax.set_ylabel("Kg")
     ax.grid(True)
     
@@ -98,9 +121,19 @@ async def monthly_summary_job(context: CallbackContext) -> None:
     buf.seek(0)
     
     diff = vals[-1] - vals[0]
-    caption = (
-        f"{last_month_start.strftime('%b %Y')}: inicio {vals[0]:.1f} kg / fin {vals[-1]:.1f} kg\n"
-        f"{'👏 Bajaste' if diff<0 else '⚠️ Subiste'} {abs(diff):.1f} kg en el mes"
+    diff_r = round(diff, 1)
+    if diff_r == 0.0:
+        change_text = strings["monthly_no_change"]
+    elif diff_r < 0:
+        change_text = strings["monthly_decrease"].format(diff=abs(diff_r))
+    else:
+        change_text = strings["monthly_increase"].format(diff=diff_r)
+    
+    caption = strings["monthly_summary_format"].format(
+        month=last_month_start.strftime('%b %Y'),
+        start=vals[0],
+        end=vals[-1],
+        change=change_text
     )
     
     await context.bot.send_photo(uid, InputFile(buf, "peso.png"), caption=caption)

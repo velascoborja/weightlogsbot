@@ -25,6 +25,14 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                user_id INTEGER PRIMARY KEY,
+                language_code TEXT DEFAULT 'es'
+            )
+            """
+        )
         conn.commit()
 
 
@@ -113,4 +121,25 @@ def get_all_user_ids():
     """Return a list of all unique user_ids in the database."""
     with closing(sqlite3.connect(DB_FILE)) as conn:
         cur = conn.execute("SELECT DISTINCT user_id FROM weights")
-        return [row[0] for row in cur.fetchall()] 
+        return [row[0] for row in cur.fetchall()]
+
+
+def save_user_language(user_id: int, language_code: str) -> None:
+    """Save user's language preference."""
+    with closing(sqlite3.connect(DB_FILE)) as conn:
+        conn.execute(
+            "REPLACE INTO user_preferences (user_id, language_code) VALUES (?, ?)",
+            (user_id, language_code),
+        )
+        conn.commit()
+
+
+def get_user_language(user_id: int) -> str:
+    """Get user's language preference, defaults to 'es'."""
+    with closing(sqlite3.connect(DB_FILE)) as conn:
+        cur = conn.execute(
+            "SELECT language_code FROM user_preferences WHERE user_id = ?",
+            (user_id,)
+        )
+        row = cur.fetchone()
+        return row[0] if row else 'es' 
